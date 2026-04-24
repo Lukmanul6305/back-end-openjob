@@ -5,7 +5,7 @@ import ClientError from "../exceptions/ClientError.js";
 import bcrypt from "bcrypt";
 
 const UserService = {
-    async register({ name, email, password, role = 'jobseeker' }) {
+    async register({ name, email, password, role = 'user' }) {
         const checkEmail = await query('SELECT id FROM users WHERE email = $1', [email]);
         if (checkEmail.rowCount > 0) {
             throw new ClientError('Email already registered', 400);
