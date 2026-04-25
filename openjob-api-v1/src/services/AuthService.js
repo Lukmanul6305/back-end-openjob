@@ -1,21 +1,20 @@
 import { query } from "../config/database.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import AuthenticationError from "../exceptions/AuthenticationError.js";
 
 const AuthService = {
     async login({ email, password }) {
         const result = await query('SELECT * FROM users WHERE email = $1', [email]);
 
         if (result.rowCount === 0) {
-            throw new AuthenticationError('Invalid email or password');
+            return { error: 'Invalid email or password', statusCode: 401 };
         }
 
         const user = result.rows[0];
         const isValid = await bcrypt.compare(password, user.password);
 
         if (!isValid) {
-            throw new AuthenticationError('Invalid email or password');
+            return { error: 'Invalid email or password', statusCode: 401 };
         }
 
         const accessToken = jwt.sign(
@@ -38,14 +37,14 @@ const AuthService = {
         const result = await query('SELECT token FROM authentications WHERE token = $1', [refreshToken]);
 
         if (result.rowCount === 0) {
-            throw new AuthenticationError('Refresh token not found');
+            return { error: 'Refresh token not found', statusCode: 400 };
         }
 
         let decoded;
         try {
             decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_KEY);
         } catch {
-            throw new AuthenticationError('Invalid refresh token');
+            return { error: 'Invalid refresh token', statusCode: 400 };
         }
 
         const accessToken = jwt.sign(
@@ -61,10 +60,11 @@ const AuthService = {
         const result = await query('SELECT token FROM authentications WHERE token = $1', [refreshToken]);
 
         if (result.rowCount === 0) {
-            throw new AuthenticationError('Refresh token not found');
+            return { error: 'Refresh token not found', statusCode: 400 };
         }
 
         await query('DELETE FROM authentications WHERE token = $1', [refreshToken]);
+        return { success: true };
     },
 };
 
